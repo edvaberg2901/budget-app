@@ -384,7 +384,8 @@
         <option value="Kreditkort">Kreditkort</option>
         <option value="Annat">Annat</option>
       </select>
-      <input type="text"   id="inputVad"  placeholder="Vad gäller det? (t.ex. Hyra juni)" class="span3" required>
+      <input type="month"  id="inputManad" class="" required>
+      <input type="text"   id="inputVad"  placeholder="Vad gäller det? (t.ex. Hyra juni)" class="span2" required>
       <button type="submit" class="add-btn" id="addBtn">
         <div class="spinner"></div>
         <span class="btn-label">Lägg till</span>
@@ -405,6 +406,7 @@
           <th>Vem</th>
           <th>Kategori</th>
           <th>Vad</th>
+          <th>Månad</th>
           <th></th>
         </tr>
       </thead>
@@ -442,9 +444,17 @@
     </div>
   </div>
 
+  <!-- Category chart -->
+  <div class="card">
+    <h2>Utgifter per kategori &amp; månad</h2>
+    <div id="chartEmpty" class="empty" style="display:none;">Inga data att visa ännu.</div>
+    <canvas id="categoryChart" style="display:none;"></canvas>
+  </div>
+
   <footer>Data sparas i Google Sheets · <a href="#" id="changeUrlLink" style="color:inherit;">Byt anslutning</a></footer>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
 // ── Storage key ──────────────────────────────────────────
 const URL_KEY = 'hushaall-script-url';
@@ -492,12 +502,35 @@ async function apiCall(params) {
 
 // ── State ────────────────────────────────────────────────
 let allExpenses = [];
-let activeMonth = currentMonth(); // null = show all
+let activeMonth = currentMonth();
 let showAll = false;
+
+function normalizeMonth(m) {
+  if (m == null) return '';
+  const s = String(m).trim();
+  if (!s) return '';
+  // Fast path: already YYYY-MM or YYYY-MM-DD...
+  const iso = s.match(/^(\d{4})-(\d{2})/);
+  if (iso) return iso[1] + '-' + iso[2];
+  // Fallback: parse any locale date string (e.g. "Mon Jun 01 2026 09:00:00 GMT+0200...")
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+  return '';
+}
+
+function fmtMonthLong(m) {
+  const norm = normalizeMonth(m);
+  if (!norm) return '';
+  const [y, mo] = norm.split('-');
+  const names = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return (names[parseInt(mo, 10) - 1] || '') + ' ' + y;
+}
 
 function filteredExpenses() {
   if (showAll) return allExpenses;
-  return allExpenses.filter(e => e.manad === activeMonth);
+  return allExpenses.filter(e => normalizeMonth(e.manad) === activeMonth);
 }
 
 // ── Render ───────────────────────────────────────────────
@@ -523,6 +556,7 @@ function render() {
         <td><span class="who-tag ${tagClass}">${escHtml(e.vem)}</span></td>
         <td><span class="cat-tag">${escHtml(e.kategori)}</span></td>
         <td>${escHtml(e.vad)}</td>
+        <td style="white-space:nowrap;color:var(--ink-soft);font-size:13px;">${escHtml(fmtMonthLong(e.manad))}</td>
         <td><button class="del-btn" data-row="${e._row}" aria-label="Ta bort">×</button></td>
       `;
       tbody.appendChild(tr);
@@ -530,6 +564,7 @@ function render() {
 
     document.querySelectorAll('.del-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
+        if (!confirm('Är du säker på att du vill ta bort denna rad?')) return;
         const row = parseInt(btn.dataset.row, 10);
         btn.disabled = true;
         try {
@@ -593,6 +628,95 @@ function render() {
   }
 }
 
+// ── Category chart ───────────────────────────────────────
+const CAT_COLORS = {
+  'Hyra':       '#6366F1',  // indigo
+  'Lån':        '#EC4899',  // fuchsia
+  'El':         '#F59E0B',  // amber
+  'Försäkring': '#10B981',  // emerald
+  'Skola':      '#06B6D4',  // cyan
+  'Mat':        '#84CC16',  // lime
+  'Kreditkort': '#EF4444',  // red
+  'Annat':      '#8B5CF6',  // violet
+};
+
+let categoryChart = null;
+
+function renderChart() {
+  const canvas = $('categoryChart');
+  const empty  = $('chartEmpty');
+
+  if (!allExpenses.length) {
+    canvas.style.display = 'none';
+    empty.style.display  = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  empty.style.display  = 'none';
+
+  const months     = [...new Set(allExpenses.map(e => normalizeMonth(e.manad)))].filter(Boolean).sort();
+  const categories = [...new Set(allExpenses.map(e => e.kategori))].filter(Boolean);
+
+  const monthLabels = months.map(m => {
+    const [y, mo] = m.split('-');
+    const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return names[parseInt(mo, 10) - 1] + ' \'' + y.slice(2);
+  });
+
+  const datasets = categories.map(cat => ({
+    label: cat,
+    data: months.map(m =>
+      allExpenses.filter(e => normalizeMonth(e.manad) === m && e.kategori === cat)
+                 .reduce((s, e) => s + e.kr, 0)
+    ),
+    backgroundColor: CAT_COLORS[cat] || '#B0A99A',
+    borderRadius: 4,
+    borderSkipped: false,
+  }));
+
+  if (categoryChart) {
+    categoryChart.data.labels   = monthLabels;
+    categoryChart.data.datasets = datasets;
+    categoryChart.update();
+    return;
+  }
+
+  categoryChart = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: { labels: monthLabels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { family: 'Inter, system-ui, sans-serif', size: 12 }, padding: 16 },
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${Math.round(ctx.raw).toLocaleString('sv-SE')} kr`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          grid: { display: false },
+          ticks: { font: { family: 'Inter, system-ui, sans-serif', size: 12 } },
+        },
+        y: {
+          stacked: true,
+          grid: { color: '#E4DFD6' },
+          ticks: {
+            font: { family: 'Inter, system-ui, sans-serif', size: 12 },
+            callback: v => v.toLocaleString('sv-SE') + ' kr',
+          },
+        },
+      },
+    },
+  });
+}
+
 // ── Load data ────────────────────────────────────────────
 async function loadData() {
   $('tableLoading').style.display = 'flex';
@@ -603,6 +727,7 @@ async function loadData() {
     const json = await apiCall({ action: 'get' });
     allExpenses = json.data || [];
     render();
+    renderChart();
   } catch (err) {
     showError('Kunde inte ladda data: ' + err.message + '. Kontrollera din Apps Script-URL.');
   } finally {
@@ -617,8 +742,8 @@ $('addForm').addEventListener('submit', async e => {
   const vem      = $('inputVem').value;
   const kategori = $('inputKategori').value;
   const vad      = $('inputVad').value.trim();
-  const manad    = showAll ? currentMonth() : activeMonth;
-  if (!kr || !vad || !kategori) return;
+  const manad    = $('inputManad').value || activeMonth;
+  if (!kr || !vad || !kategori || !manad) return;
 
   const btn = $('addBtn');
   btn.disabled = true;
@@ -628,6 +753,7 @@ $('addForm').addEventListener('submit', async e => {
   try {
     await apiCall({ action: 'add', manad, kr, vem, kategori, vad });
     $('addForm').reset();
+    $('inputManad').value = activeMonth;
     await loadData();
   } catch (err) {
     showError('Kunde inte spara: ' + err.message);
@@ -638,10 +764,12 @@ $('addForm').addEventListener('submit', async e => {
 });
 
 // ── Month filter ─────────────────────────────────────────
-$('monthFilter').value = currentMonth();
+$('monthFilter').value  = currentMonth();
+$('inputManad').value   = currentMonth();
 
 $('monthFilter').addEventListener('change', () => {
   activeMonth = $('monthFilter').value;
+  $('inputManad').value = activeMonth;
   showAll = false;
   $('allMonthsBtn').classList.remove('active');
   updateMonthLabel();
