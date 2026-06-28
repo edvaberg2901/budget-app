@@ -8,18 +8,19 @@
   @import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&display=swap');
 
   :root {
-    --bg:           #FAF7F2;
-    --ink:          #2B2A28;
-    --ink-soft:     #6B6862;
-    --line:         #E4DFD6;
-    --edvard:       #3D5A80;
-    --edvard-soft:  #DCE5EF;
-    --evelina:      #B85C38;
-    --evelina-soft: #F3E1D6;
-    --settle:       #1F6F5C;
-    --settle-soft:  #DCEDE7;
-    --card:         #FFFFFF;
-    --danger:       #B5443B;
+    --bg:           #0B0B12;
+    --ink:          #E4E4F0;
+    --ink-soft:     #6B6B90;
+    --line:         #22223A;
+    --edvard:       #818CF8;
+    --edvard-soft:  #1A1A38;
+    --evelina:      #FB7185;
+    --evelina-soft: #32121C;
+    --settle:       #34D399;
+    --settle-soft:  #0A2419;
+    --card:         #13131E;
+    --danger:       #F87171;
+    --accent:       #6366F1;
   }
 
   * { box-sizing: border-box; }
@@ -34,8 +35,8 @@
   }
   .wrap { max-width: 580px; margin: 0 auto; }
 
-  /* ── Setup Screen ─────────────────────────────────────── */
-  #setupScreen {
+  /* ── Setup & PIN Screens ──────────────────────────────── */
+  #setupScreen, #pinScreen {
     max-width: 480px;
     margin: 60px auto;
     background: var(--card);
@@ -43,15 +44,43 @@
     border-radius: 16px;
     padding: 32px 28px;
   }
-  #setupScreen h1 {
+  #setupScreen h1, #pinScreen h1 {
     font-family: 'Newsreader', serif;
     font-size: 26px;
     font-weight: 600;
     margin: 0 0 8px;
   }
-  #setupScreen p { font-size: 14px; color: var(--ink-soft); margin: 0 0 20px; line-height: 1.6; }
+  #setupScreen p, #pinScreen p { font-size: 14px; color: var(--ink-soft); margin: 0 0 20px; line-height: 1.6; }
   #setupScreen ol { font-size: 14px; color: var(--ink-soft); margin: 0 0 20px; padding-left: 20px; line-height: 2; }
   #setupScreen ol b { color: var(--ink); }
+  #pinInput {
+    width: 100%;
+    font-family: inherit;
+    font-size: 22px;
+    letter-spacing: 0.3em;
+    text-align: center;
+    padding: 11px 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+  #pinInput:focus { outline: 2px solid var(--settle); outline-offset: 1px; }
+  #pinBtn {
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #pinBtn:hover { opacity: 0.88; }
+  #pinBtn:disabled { opacity: 0.5; cursor: default; }
+  #pinError { font-size: 13px; color: var(--danger); margin-top: 8px; display: none; }
   #urlInput {
     width: 100%;
     font-family: inherit;
@@ -66,7 +95,7 @@
   #urlInput:focus { outline: 2px solid var(--settle); outline-offset: 1px; }
   #saveUrlBtn {
     width: 100%;
-    background: var(--ink);
+    background: var(--accent);
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -132,7 +161,7 @@
     cursor: pointer;
   }
   .all-months-btn:hover { background: var(--line); }
-  .all-months-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .all-months-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
   /* ── Cards ────────────────────────────────────────────── */
   .card {
@@ -141,6 +170,7 @@
     border-radius: 14px;
     padding: 18px;
     margin-bottom: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
   }
   .card h2 {
     font-size: 12px;
@@ -176,7 +206,7 @@
   .span3 { grid-column: 1 / -1; }
   .add-btn {
     grid-column: 1 / -1;
-    background: var(--ink);
+    background: var(--accent);
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -206,23 +236,29 @@
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* ── Table ────────────────────────────────────────────── */
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
   thead th {
     text-align: left;
-    font-size: 11px;
+    font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--ink-soft);
-    padding: 0 6px 8px;
+    padding: 0 4px 7px;
     border-bottom: 1px solid var(--line);
   }
   thead th.num { text-align: right; }
   tbody td {
-    padding: 10px 6px;
+    padding: 7px 4px;
     border-bottom: 1px solid var(--line);
     vertical-align: middle;
   }
   tbody tr:last-child td { border-bottom: none; }
+  td.col-vad {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .amount { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; white-space: nowrap; }
   .who-tag {
     display: inline-block;
@@ -270,8 +306,8 @@
     flex-shrink: 0;
   }
   .error-banner {
-    background: #FDECEA;
-    border: 1px solid #F5C2BF;
+    background: #2D1212;
+    border: 1px solid #5C2222;
     border-radius: 10px;
     padding: 12px 14px;
     font-size: 13px;
@@ -321,6 +357,12 @@
   @media (max-width: 480px) {
     form.add-row { grid-template-columns: 1fr 1fr; }
     .span2 { grid-column: 1 / -1; }
+    .col-manad { display: none; }
+    tbody td { padding: 6px 3px; }
+    table { font-size: 12px; }
+    .who-tag { font-size: 11px; padding: 2px 6px; }
+    .cat-tag { font-size: 10px; padding: 1px 5px; }
+    td.col-vad { max-width: 80px; }
   }
   @media (prefers-reduced-motion: no-preference) {
     .total-box, .settle { transition: background 0.2s ease; }
@@ -341,6 +383,15 @@
   <input id="urlInput" type="url" placeholder="https://script.google.com/macros/s/..." />
   <div id="urlError">URL:en verkar inte stämma. Kontrollera att du kopierat rätt.</div>
   <button id="saveUrlBtn">Spara och anslut</button>
+</div>
+
+<!-- ── PIN SCREEN ────────────────────────────────────────── -->
+<div id="pinScreen" style="display:none;">
+  <h1>Ange PIN-kod</h1>
+  <p>Appen är skyddad. Ange PIN-koden för att fortsätta.</p>
+  <input id="pinInput" type="password" placeholder="••••" autocomplete="current-password">
+  <div id="pinError">Fel PIN-kod. Försök igen.</div>
+  <button id="pinBtn">Fortsätt</button>
 </div>
 
 <!-- ── MAIN APP ──────────────────────────────────────────── -->
@@ -406,7 +457,7 @@
           <th>Vem</th>
           <th>Kategori</th>
           <th>Vad</th>
-          <th>Månad</th>
+          <th class="col-manad">Månad</th>
           <th></th>
         </tr>
       </thead>
@@ -451,13 +502,14 @@
     <canvas id="categoryChart" style="display:none;"></canvas>
   </div>
 
-  <footer>Data sparas i Google Sheets · <a href="#" id="changeUrlLink" style="color:inherit;">Byt anslutning</a></footer>
+  <footer>Data sparas i Google Sheets · <a href="#" id="changeUrlLink" style="color:inherit;">Byt anslutning</a> · <a href="#" id="changePinLink" style="color:inherit;">Byt PIN</a></footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
-// ── Storage key ──────────────────────────────────────────
+// ── Storage keys ─────────────────────────────────────────
 const URL_KEY = 'hushaall-script-url';
+const PIN_KEY = 'hushaall-pin';
 
 // ── Helpers ──────────────────────────────────────────────
 const fmt = n => Math.round(n).toLocaleString('sv-SE') + ' kr';
@@ -481,21 +533,39 @@ function showError(msg) {
 }
 
 // ── Script URL ───────────────────────────────────────────
+// Paste your deployed Apps Script Web App URL here so anyone opening
+// this file works without going through the setup screen.
+const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzJ-xjhTJPjENgNPdrg0-zFetTQPdbXgU4nmATw8Ehh3tFIOCxXwzzhGZfvKtxJYNmxGw/exec';
+
 function getScriptUrl() {
-  return localStorage.getItem(URL_KEY) || '';
+  return localStorage.getItem(URL_KEY) || DEFAULT_SCRIPT_URL;
 }
 function setScriptUrl(url) {
   localStorage.setItem(URL_KEY, url);
 }
 
+// ── PIN ──────────────────────────────────────────────────
+function getPin()        { return localStorage.getItem(PIN_KEY); }
+function setPin(pin)     { localStorage.setItem(PIN_KEY, pin); }
+function clearPin()      { localStorage.removeItem(PIN_KEY); }
+
 // ── API calls (all via GET to avoid CORS preflight) ──────
 async function apiCall(params) {
   const url = getScriptUrl();
   if (!url) throw new Error('Ingen URL konfigurerad');
-  const qs = new URLSearchParams(params).toString();
+  const writeActions = ['add', 'delete'];
+  const allParams = writeActions.includes(params.action)
+    ? { ...params, pin: getPin() || '' }
+    : params;
+  const qs = new URLSearchParams(allParams).toString();
   const res = await fetch(`${url}?${qs}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
+  if (json.error === 'Unauthorized') {
+    clearPin();
+    showPinScreen();
+    throw new Error('Fel PIN-kod');
+  }
   if (json.error) throw new Error(json.error);
   return json;
 }
@@ -555,8 +625,8 @@ function render() {
         <td class="amount">${fmt(e.kr)}</td>
         <td><span class="who-tag ${tagClass}">${escHtml(e.vem)}</span></td>
         <td><span class="cat-tag">${escHtml(e.kategori)}</span></td>
-        <td>${escHtml(e.vad)}</td>
-        <td style="white-space:nowrap;color:var(--ink-soft);font-size:13px;">${escHtml(fmtMonthLong(e.manad))}</td>
+        <td class="col-vad">${escHtml(e.vad)}</td>
+        <td class="col-manad" style="white-space:nowrap;color:var(--ink-soft);font-size:12px;">${escHtml(fmtMonthLong(e.manad))}</td>
         <td><button class="del-btn" data-row="${e._row}" aria-label="Ta bort">×</button></td>
       `;
       tbody.appendChild(tr);
@@ -797,13 +867,24 @@ updateMonthLabel();
 // ── Settings / URL ───────────────────────────────────────
 function showSetup() {
   $('setupScreen').style.display = 'block';
+  $('pinScreen').style.display   = 'none';
   $('mainApp').style.display     = 'none';
   $('urlInput').value = getScriptUrl();
   $('urlError').style.display = 'none';
 }
 
+function showPinScreen() {
+  $('setupScreen').style.display = 'none';
+  $('pinScreen').style.display   = 'block';
+  $('mainApp').style.display     = 'none';
+  $('pinInput').value = '';
+  $('pinError').style.display = 'none';
+  setTimeout(() => $('pinInput').focus(), 50);
+}
+
 function showApp() {
   $('setupScreen').style.display = 'none';
+  $('pinScreen').style.display   = 'none';
   $('mainApp').style.display     = 'block';
 }
 
@@ -814,17 +895,42 @@ $('saveUrlBtn').addEventListener('click', () => {
     return;
   }
   setScriptUrl(url);
-  showApp();
-  loadData();
+  getPin() !== null ? (showApp(), loadData()) : showPinScreen();
 });
+
+async function verifyPin() {
+  const pin = $('pinInput').value;
+  const btn = $('pinBtn');
+  btn.disabled = true;
+  $('pinError').style.display = 'none';
+  try {
+    const url = getScriptUrl();
+    const qs  = new URLSearchParams({ action: 'verify', pin }).toString();
+    const res = await fetch(`${url}?${qs}`);
+    const json = await res.json();
+    if (json.error) throw new Error(json.error);
+    setPin(pin);
+    showApp();
+    loadData();
+  } catch {
+    $('pinError').style.display = 'block';
+    $('pinInput').value = '';
+    $('pinInput').focus();
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+$('pinBtn').addEventListener('click', verifyPin);
+$('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') verifyPin(); });
 
 $('settingsBtn').addEventListener('click', showSetup);
 $('changeUrlLink').addEventListener('click', e => { e.preventDefault(); showSetup(); });
+$('changePinLink').addEventListener('click', e => { e.preventDefault(); clearPin(); showPinScreen(); });
 
 // ── Boot ─────────────────────────────────────────────────
 if (getScriptUrl()) {
-  showApp();
-  loadData();
+  getPin() !== null ? (showApp(), loadData()) : showPinScreen();
 } else {
   showSetup();
 }
