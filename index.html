@@ -8,18 +8,19 @@
   @import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&display=swap');
 
   :root {
-    --bg:           #FAF7F2;
-    --ink:          #2B2A28;
-    --ink-soft:     #6B6862;
-    --line:         #E4DFD6;
-    --edvard:       #3D5A80;
-    --edvard-soft:  #DCE5EF;
-    --evelina:      #B85C38;
-    --evelina-soft: #F3E1D6;
-    --settle:       #1F6F5C;
-    --settle-soft:  #DCEDE7;
-    --card:         #FFFFFF;
-    --danger:       #B5443B;
+    --bg:           #0B0B12;
+    --ink:          #E4E4F0;
+    --ink-soft:     #6B6B90;
+    --line:         #22223A;
+    --edvard:       #818CF8;
+    --edvard-soft:  #1A1A38;
+    --evelina:      #FB7185;
+    --evelina-soft: #32121C;
+    --settle:       #34D399;
+    --settle-soft:  #0A2419;
+    --card:         #13131E;
+    --danger:       #F87171;
+    --accent:       #6366F1;
   }
 
   * { box-sizing: border-box; }
@@ -68,7 +69,7 @@
   #pinInput:focus { outline: 2px solid var(--settle); outline-offset: 1px; }
   #pinBtn {
     width: 100%;
-    background: var(--ink);
+    background: var(--accent);
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -94,7 +95,7 @@
   #urlInput:focus { outline: 2px solid var(--settle); outline-offset: 1px; }
   #saveUrlBtn {
     width: 100%;
-    background: var(--ink);
+    background: var(--accent);
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -160,7 +161,7 @@
     cursor: pointer;
   }
   .all-months-btn:hover { background: var(--line); }
-  .all-months-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .all-months-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
   /* ── Cards ────────────────────────────────────────────── */
   .card {
@@ -169,6 +170,7 @@
     border-radius: 14px;
     padding: 18px;
     margin-bottom: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
   }
   .card h2 {
     font-size: 12px;
@@ -204,7 +206,7 @@
   .span3 { grid-column: 1 / -1; }
   .add-btn {
     grid-column: 1 / -1;
-    background: var(--ink);
+    background: var(--accent);
     color: #fff;
     border: none;
     border-radius: 8px;
@@ -234,23 +236,29 @@
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* ── Table ────────────────────────────────────────────── */
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
   thead th {
     text-align: left;
-    font-size: 11px;
+    font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--ink-soft);
-    padding: 0 6px 8px;
+    padding: 0 4px 7px;
     border-bottom: 1px solid var(--line);
   }
   thead th.num { text-align: right; }
   tbody td {
-    padding: 10px 6px;
+    padding: 7px 4px;
     border-bottom: 1px solid var(--line);
     vertical-align: middle;
   }
   tbody tr:last-child td { border-bottom: none; }
+  td.col-vad {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .amount { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; white-space: nowrap; }
   .who-tag {
     display: inline-block;
@@ -298,8 +306,8 @@
     flex-shrink: 0;
   }
   .error-banner {
-    background: #FDECEA;
-    border: 1px solid #F5C2BF;
+    background: #2D1212;
+    border: 1px solid #5C2222;
     border-radius: 10px;
     padding: 12px 14px;
     font-size: 13px;
@@ -349,6 +357,12 @@
   @media (max-width: 480px) {
     form.add-row { grid-template-columns: 1fr 1fr; }
     .span2 { grid-column: 1 / -1; }
+    .col-manad { display: none; }
+    tbody td { padding: 6px 3px; }
+    table { font-size: 12px; }
+    .who-tag { font-size: 11px; padding: 2px 6px; }
+    .cat-tag { font-size: 10px; padding: 1px 5px; }
+    td.col-vad { max-width: 80px; }
   }
   @media (prefers-reduced-motion: no-preference) {
     .total-box, .settle { transition: background 0.2s ease; }
@@ -443,7 +457,7 @@
           <th>Vem</th>
           <th>Kategori</th>
           <th>Vad</th>
-          <th>Månad</th>
+          <th class="col-manad">Månad</th>
           <th></th>
         </tr>
       </thead>
@@ -611,8 +625,8 @@ function render() {
         <td class="amount">${fmt(e.kr)}</td>
         <td><span class="who-tag ${tagClass}">${escHtml(e.vem)}</span></td>
         <td><span class="cat-tag">${escHtml(e.kategori)}</span></td>
-        <td>${escHtml(e.vad)}</td>
-        <td style="white-space:nowrap;color:var(--ink-soft);font-size:13px;">${escHtml(fmtMonthLong(e.manad))}</td>
+        <td class="col-vad">${escHtml(e.vad)}</td>
+        <td class="col-manad" style="white-space:nowrap;color:var(--ink-soft);font-size:12px;">${escHtml(fmtMonthLong(e.manad))}</td>
         <td><button class="del-btn" data-row="${e._row}" aria-label="Ta bort">×</button></td>
       `;
       tbody.appendChild(tr);
