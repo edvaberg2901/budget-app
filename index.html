@@ -481,8 +481,12 @@ function showError(msg) {
 }
 
 // ── Script URL ───────────────────────────────────────────
+// Paste your deployed Apps Script Web App URL here so anyone opening
+// this file works without going through the setup screen.
+const DEFAULT_SCRIPT_URL = '';
+
 function getScriptUrl() {
-  return localStorage.getItem(URL_KEY) || '';
+  return localStorage.getItem(URL_KEY) || DEFAULT_SCRIPT_URL;
 }
 function setScriptUrl(url) {
   localStorage.setItem(URL_KEY, url);
