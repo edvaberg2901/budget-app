@@ -34,8 +34,8 @@
   }
   .wrap { max-width: 580px; margin: 0 auto; }
 
-  /* ── Setup Screen ─────────────────────────────────────── */
-  #setupScreen {
+  /* ── Setup & PIN Screens ──────────────────────────────── */
+  #setupScreen, #pinScreen {
     max-width: 480px;
     margin: 60px auto;
     background: var(--card);
@@ -43,15 +43,43 @@
     border-radius: 16px;
     padding: 32px 28px;
   }
-  #setupScreen h1 {
+  #setupScreen h1, #pinScreen h1 {
     font-family: 'Newsreader', serif;
     font-size: 26px;
     font-weight: 600;
     margin: 0 0 8px;
   }
-  #setupScreen p { font-size: 14px; color: var(--ink-soft); margin: 0 0 20px; line-height: 1.6; }
+  #setupScreen p, #pinScreen p { font-size: 14px; color: var(--ink-soft); margin: 0 0 20px; line-height: 1.6; }
   #setupScreen ol { font-size: 14px; color: var(--ink-soft); margin: 0 0 20px; padding-left: 20px; line-height: 2; }
   #setupScreen ol b { color: var(--ink); }
+  #pinInput {
+    width: 100%;
+    font-family: inherit;
+    font-size: 22px;
+    letter-spacing: 0.3em;
+    text-align: center;
+    padding: 11px 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+  #pinInput:focus { outline: 2px solid var(--settle); outline-offset: 1px; }
+  #pinBtn {
+    width: 100%;
+    background: var(--ink);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #pinBtn:hover { opacity: 0.88; }
+  #pinBtn:disabled { opacity: 0.5; cursor: default; }
+  #pinError { font-size: 13px; color: var(--danger); margin-top: 8px; display: none; }
   #urlInput {
     width: 100%;
     font-family: inherit;
@@ -343,6 +371,15 @@
   <button id="saveUrlBtn">Spara och anslut</button>
 </div>
 
+<!-- ── PIN SCREEN ────────────────────────────────────────── -->
+<div id="pinScreen" style="display:none;">
+  <h1>Ange PIN-kod</h1>
+  <p>Appen är skyddad. Ange PIN-koden för att fortsätta.</p>
+  <input id="pinInput" type="password" placeholder="••••" autocomplete="current-password">
+  <div id="pinError">Fel PIN-kod. Försök igen.</div>
+  <button id="pinBtn">Fortsätt</button>
+</div>
+
 <!-- ── MAIN APP ──────────────────────────────────────────── -->
 <div id="mainApp" class="wrap" style="display:none;">
 
@@ -451,13 +488,14 @@
     <canvas id="categoryChart" style="display:none;"></canvas>
   </div>
 
-  <footer>Data sparas i Google Sheets · <a href="#" id="changeUrlLink" style="color:inherit;">Byt anslutning</a></footer>
+  <footer>Data sparas i Google Sheets · <a href="#" id="changeUrlLink" style="color:inherit;">Byt anslutning</a> · <a href="#" id="changePinLink" style="color:inherit;">Byt PIN</a></footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
-// ── Storage key ──────────────────────────────────────────
+// ── Storage keys ─────────────────────────────────────────
 const URL_KEY = 'hushaall-script-url';
+const PIN_KEY = 'hushaall-pin';
 
 // ── Helpers ──────────────────────────────────────────────
 const fmt = n => Math.round(n).toLocaleString('sv-SE') + ' kr';
@@ -492,14 +530,28 @@ function setScriptUrl(url) {
   localStorage.setItem(URL_KEY, url);
 }
 
+// ── PIN ──────────────────────────────────────────────────
+function getPin()        { return localStorage.getItem(PIN_KEY); }
+function setPin(pin)     { localStorage.setItem(PIN_KEY, pin); }
+function clearPin()      { localStorage.removeItem(PIN_KEY); }
+
 // ── API calls (all via GET to avoid CORS preflight) ──────
 async function apiCall(params) {
   const url = getScriptUrl();
   if (!url) throw new Error('Ingen URL konfigurerad');
-  const qs = new URLSearchParams(params).toString();
+  const writeActions = ['add', 'delete'];
+  const allParams = writeActions.includes(params.action)
+    ? { ...params, pin: getPin() || '' }
+    : params;
+  const qs = new URLSearchParams(allParams).toString();
   const res = await fetch(`${url}?${qs}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const json = await res.json();
+  if (json.error === 'Unauthorized') {
+    clearPin();
+    showPinScreen();
+    throw new Error('Fel PIN-kod');
+  }
   if (json.error) throw new Error(json.error);
   return json;
 }
@@ -801,13 +853,24 @@ updateMonthLabel();
 // ── Settings / URL ───────────────────────────────────────
 function showSetup() {
   $('setupScreen').style.display = 'block';
+  $('pinScreen').style.display   = 'none';
   $('mainApp').style.display     = 'none';
   $('urlInput').value = getScriptUrl();
   $('urlError').style.display = 'none';
 }
 
+function showPinScreen() {
+  $('setupScreen').style.display = 'none';
+  $('pinScreen').style.display   = 'block';
+  $('mainApp').style.display     = 'none';
+  $('pinInput').value = '';
+  $('pinError').style.display = 'none';
+  setTimeout(() => $('pinInput').focus(), 50);
+}
+
 function showApp() {
   $('setupScreen').style.display = 'none';
+  $('pinScreen').style.display   = 'none';
   $('mainApp').style.display     = 'block';
 }
 
@@ -818,17 +881,42 @@ $('saveUrlBtn').addEventListener('click', () => {
     return;
   }
   setScriptUrl(url);
-  showApp();
-  loadData();
+  getPin() !== null ? (showApp(), loadData()) : showPinScreen();
 });
+
+async function verifyPin() {
+  const pin = $('pinInput').value;
+  const btn = $('pinBtn');
+  btn.disabled = true;
+  $('pinError').style.display = 'none';
+  try {
+    const url = getScriptUrl();
+    const qs  = new URLSearchParams({ action: 'verify', pin }).toString();
+    const res = await fetch(`${url}?${qs}`);
+    const json = await res.json();
+    if (json.error) throw new Error(json.error);
+    setPin(pin);
+    showApp();
+    loadData();
+  } catch {
+    $('pinError').style.display = 'block';
+    $('pinInput').value = '';
+    $('pinInput').focus();
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+$('pinBtn').addEventListener('click', verifyPin);
+$('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') verifyPin(); });
 
 $('settingsBtn').addEventListener('click', showSetup);
 $('changeUrlLink').addEventListener('click', e => { e.preventDefault(); showSetup(); });
+$('changePinLink').addEventListener('click', e => { e.preventDefault(); clearPin(); showPinScreen(); });
 
 // ── Boot ─────────────────────────────────────────────────
 if (getScriptUrl()) {
-  showApp();
-  loadData();
+  getPin() !== null ? (showApp(), loadData()) : showPinScreen();
 } else {
   showSetup();
 }

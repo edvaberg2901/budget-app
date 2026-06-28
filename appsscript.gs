@@ -1,4 +1,5 @@
 const SHEET_NAME = 'Sheet1'; // Change if your sheet tab has a different name
+const AUTH_PIN   = '3783';   // PIN required for add/delete operations
 
 function doGet(e) {
   try {
@@ -21,7 +22,17 @@ function doGet(e) {
       return jsonResponse({ data: rows });
     }
 
+    if (action === 'verify') {
+      if (AUTH_PIN && e.parameter.pin !== AUTH_PIN) {
+        return jsonResponse({ error: 'Unauthorized' });
+      }
+      return jsonResponse({ success: true });
+    }
+
     if (action === 'add') {
+      if (AUTH_PIN && e.parameter.pin !== AUTH_PIN) {
+        return jsonResponse({ error: 'Unauthorized' });
+      }
       const manad    = e.parameter.manad    || currentMonth();
       const kr       = Number(e.parameter.kr) || 0;
       const vem      = e.parameter.vem      || '';
@@ -32,6 +43,9 @@ function doGet(e) {
     }
 
     if (action === 'delete') {
+      if (AUTH_PIN && e.parameter.pin !== AUTH_PIN) {
+        return jsonResponse({ error: 'Unauthorized' });
+      }
       const row = parseInt(e.parameter.row, 10);
       if (row >= 2) sheet.deleteRow(row);
       return jsonResponse({ success: true });
