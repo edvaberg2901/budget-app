@@ -443,9 +443,17 @@
     </div>
   </div>
 
+  <!-- Category chart -->
+  <div class="card">
+    <h2>Utgifter per kategori &amp; månad</h2>
+    <div id="chartEmpty" class="empty" style="display:none;">Inga data att visa ännu.</div>
+    <canvas id="categoryChart" style="display:none;"></canvas>
+  </div>
+
   <footer>Data sparas i Google Sheets · <a href="#" id="changeUrlLink" style="color:inherit;">Byt anslutning</a></footer>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
 // ── Storage key ──────────────────────────────────────────
 const URL_KEY = 'hushaall-script-url';
@@ -493,12 +501,20 @@ async function apiCall(params) {
 
 // ── State ────────────────────────────────────────────────
 let allExpenses = [];
-let activeMonth = currentMonth(); // null = show all
+let activeMonth = currentMonth();
 let showAll = false;
+
+function normalizeMonth(m) {
+  if (!m) return '';
+  const s = String(m).trim();
+  // Full date string: 2026-06-01 → 2026-06
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 7);
+  return s;
+}
 
 function filteredExpenses() {
   if (showAll) return allExpenses;
-  return allExpenses.filter(e => e.manad === activeMonth);
+  return allExpenses.filter(e => normalizeMonth(e.manad) === activeMonth);
 }
 
 // ── Render ───────────────────────────────────────────────
@@ -594,6 +610,95 @@ function render() {
   }
 }
 
+// ── Category chart ───────────────────────────────────────
+const CAT_COLORS = {
+  'Hyra':       '#3D5A80',
+  'Lån':        '#B85C38',
+  'El':         '#F4A261',
+  'Försäkring': '#2A9D8F',
+  'Skola':      '#E9C46A',
+  'Mat':        '#264653',
+  'Kreditkort': '#E76F51',
+  'Annat':      '#A8DADC',
+};
+
+let categoryChart = null;
+
+function renderChart() {
+  const canvas = $('categoryChart');
+  const empty  = $('chartEmpty');
+
+  if (!allExpenses.length) {
+    canvas.style.display = 'none';
+    empty.style.display  = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  empty.style.display  = 'none';
+
+  const months     = [...new Set(allExpenses.map(e => normalizeMonth(e.manad)))].filter(Boolean).sort();
+  const categories = [...new Set(allExpenses.map(e => e.kategori))].filter(Boolean);
+
+  const monthLabels = months.map(m => {
+    const [y, mo] = m.split('-');
+    const names = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+    return names[parseInt(mo, 10) - 1] + ' ' + y;
+  });
+
+  const datasets = categories.map(cat => ({
+    label: cat,
+    data: months.map(m =>
+      allExpenses.filter(e => normalizeMonth(e.manad) === m && e.kategori === cat)
+                 .reduce((s, e) => s + e.kr, 0)
+    ),
+    backgroundColor: CAT_COLORS[cat] || '#B0A99A',
+    borderRadius: 4,
+    borderSkipped: false,
+  }));
+
+  if (categoryChart) {
+    categoryChart.data.labels   = monthLabels;
+    categoryChart.data.datasets = datasets;
+    categoryChart.update();
+    return;
+  }
+
+  categoryChart = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: { labels: monthLabels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { family: 'Inter, system-ui, sans-serif', size: 12 }, padding: 16 },
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${Math.round(ctx.raw).toLocaleString('sv-SE')} kr`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          grid: { display: false },
+          ticks: { font: { family: 'Inter, system-ui, sans-serif', size: 12 } },
+        },
+        y: {
+          stacked: true,
+          grid: { color: '#E4DFD6' },
+          ticks: {
+            font: { family: 'Inter, system-ui, sans-serif', size: 12 },
+            callback: v => v.toLocaleString('sv-SE') + ' kr',
+          },
+        },
+      },
+    },
+  });
+}
+
 // ── Load data ────────────────────────────────────────────
 async function loadData() {
   $('tableLoading').style.display = 'flex';
@@ -604,6 +709,7 @@ async function loadData() {
     const json = await apiCall({ action: 'get' });
     allExpenses = json.data || [];
     render();
+    renderChart();
   } catch (err) {
     showError('Kunde inte ladda data: ' + err.message + '. Kontrollera din Apps Script-URL.');
   } finally {
