@@ -384,7 +384,8 @@
         <option value="Kreditkort">Kreditkort</option>
         <option value="Annat">Annat</option>
       </select>
-      <input type="text"   id="inputVad"  placeholder="Vad gäller det? (t.ex. Hyra juni)" class="span3" required>
+      <input type="month"  id="inputManad" class="" required>
+      <input type="text"   id="inputVad"  placeholder="Vad gäller det? (t.ex. Hyra juni)" class="span2" required>
       <button type="submit" class="add-btn" id="addBtn">
         <div class="spinner"></div>
         <span class="btn-label">Lägg till</span>
@@ -617,8 +618,8 @@ $('addForm').addEventListener('submit', async e => {
   const vem      = $('inputVem').value;
   const kategori = $('inputKategori').value;
   const vad      = $('inputVad').value.trim();
-  const manad    = showAll ? currentMonth() : activeMonth;
-  if (!kr || !vad || !kategori) return;
+  const manad    = $('inputManad').value || activeMonth;
+  if (!kr || !vad || !kategori || !manad) return;
 
   const btn = $('addBtn');
   btn.disabled = true;
@@ -628,6 +629,7 @@ $('addForm').addEventListener('submit', async e => {
   try {
     await apiCall({ action: 'add', manad, kr, vem, kategori, vad });
     $('addForm').reset();
+    $('inputManad').value = activeMonth;
     await loadData();
   } catch (err) {
     showError('Kunde inte spara: ' + err.message);
@@ -638,10 +640,12 @@ $('addForm').addEventListener('submit', async e => {
 });
 
 // ── Month filter ─────────────────────────────────────────
-$('monthFilter').value = currentMonth();
+$('monthFilter').value  = currentMonth();
+$('inputManad').value   = currentMonth();
 
 $('monthFilter').addEventListener('change', () => {
   activeMonth = $('monthFilter').value;
+  $('inputManad').value = activeMonth;
   showAll = false;
   $('allMonthsBtn').classList.remove('active');
   updateMonthLabel();
