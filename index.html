@@ -406,6 +406,7 @@
           <th>Vem</th>
           <th>Kategori</th>
           <th>Vad</th>
+          <th>Månad</th>
           <th></th>
         </tr>
       </thead>
@@ -505,11 +506,18 @@ let activeMonth = currentMonth();
 let showAll = false;
 
 function normalizeMonth(m) {
-  if (!m) return '';
+  if (m == null) return '';
   const s = String(m).trim();
-  // Full date string: 2026-06-01 → 2026-06
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 7);
-  return s;
+  const match = s.match(/^(\d{4})-(\d{2})/);
+  return match ? match[1] + '-' + match[2] : s;
+}
+
+function fmtMonthLong(m) {
+  const norm = normalizeMonth(m);
+  if (!norm) return '';
+  const [y, mo] = norm.split('-');
+  const names = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return (names[parseInt(mo, 10) - 1] || '') + ' ' + y;
 }
 
 function filteredExpenses() {
@@ -540,6 +548,7 @@ function render() {
         <td><span class="who-tag ${tagClass}">${escHtml(e.vem)}</span></td>
         <td><span class="cat-tag">${escHtml(e.kategori)}</span></td>
         <td>${escHtml(e.vad)}</td>
+        <td style="white-space:nowrap;color:var(--ink-soft);font-size:13px;">${escHtml(fmtMonthLong(e.manad))}</td>
         <td><button class="del-btn" data-row="${e._row}" aria-label="Ta bort">×</button></td>
       `;
       tbody.appendChild(tr);
@@ -547,6 +556,7 @@ function render() {
 
     document.querySelectorAll('.del-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
+        if (!confirm('Är du säker på att du vill ta bort denna rad?')) return;
         const row = parseInt(btn.dataset.row, 10);
         btn.disabled = true;
         try {
@@ -641,8 +651,8 @@ function renderChart() {
 
   const monthLabels = months.map(m => {
     const [y, mo] = m.split('-');
-    const names = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
-    return names[parseInt(mo, 10) - 1] + ' ' + y;
+    const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return names[parseInt(mo, 10) - 1] + ' \'' + y.slice(2);
   });
 
   const datasets = categories.map(cat => ({
